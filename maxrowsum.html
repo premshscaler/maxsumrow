@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Max Sum Row Index — Animation</title>
+<style>
+  :root{
+    --bg: #0F1418;
+    --panel: #161C21;
+    --panel-2: #1D242B;
+    --line: #2A333B;
+    --text: #E7EDF0;
+    --text-dim: #8CA0AC;
+    --teal: #4FD1C5;
+    --amber: #F2B84B;
+    --amber-dim: #6b5527;
+    --red: #E8735F;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); height:100%;
+  }
+  .wrap{
+    max-width: 900px; margin: 0 auto; padding: 28px 20px 40px;
+  }
+  h1{
+    font-family: var(--mono); font-size: 15px; font-weight:600;
+    letter-spacing: 0.02em; color: var(--teal); margin: 0 0 4px;
+  }
+  p.sub{
+    color: var(--text-dim); font-size: 13px; margin: 0 0 22px; line-height:1.5;
+  }
+  .stage{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px;
+  }
+  .rows{
+    display:flex; flex-direction:column; gap: 10px; margin-bottom: 22px;
+  }
+  .row{
+    display:flex; align-items:center; gap: 10px;
+    padding: 8px 10px; border-radius: 8px;
+    border: 1px solid transparent;
+    transition: border-color .25s, background .25s;
+  }
+  .row.active{
+    border-color: var(--teal);
+    background: rgba(79,209,197,0.06);
+  }
+  .row.winner{
+    border-color: var(--amber);
+    background: rgba(242,184,75,0.08);
+  }
+  .row-label{
+    font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    width: 46px; flex-shrink:0;
+  }
+  .cells{ display:flex; gap:6px; }
+  .cell{
+    width: 40px; height: 40px; display:flex; align-items:center; justify-content:center;
+    font-family: var(--mono); font-size: 14px; border-radius: 6px;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+    transition: background .2s, border-color .2s, transform .2s;
+  }
+  .cell.reading{
+    border-color: var(--teal); background: rgba(79,209,197,0.16);
+    transform: translateY(-3px);
+  }
+  .sum-badge{
+    font-family: var(--mono); font-size: 13px; color: var(--text-dim);
+    margin-left: 6px; min-width: 92px;
+  }
+  .sum-badge b{ color: var(--text); font-weight: 600; }
+  .row.active .sum-badge b{ color: var(--teal); }
+  .row.winner .sum-badge b{ color: var(--amber); }
+  .crown{ font-size: 13px; margin-left: 4px; opacity: 0; transition: opacity .2s; }
+  .row.winner .crown{ opacity: 1; }
+
+  .tracker{
+    display:flex; gap: 18px; padding: 14px 16px; border-radius: 8px;
+    background: var(--panel-2); border: 1px solid var(--line);
+    font-family: var(--mono); font-size: 13px; margin-bottom: 20px;
+  }
+  .tracker div{ color: var(--text-dim); }
+  .tracker b{ color: var(--amber); font-weight: 600; }
+
+  .log{
+    font-family: var(--mono); font-size: 12.5px; color: var(--text-dim);
+    min-height: 20px; margin-bottom: 20px; line-height: 1.5;
+  }
+  .log b{ color: var(--text); }
+
+  .controls{
+    display:flex; align-items:center; gap: 10px; flex-wrap: wrap;
+  }
+  button{
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    padding: 8px 14px; border-radius: 7px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--text); cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  button:hover{ border-color: var(--teal); }
+  button.primary{ background: var(--teal); color: #08201d; border-color: var(--teal); }
+  button.primary:hover{ opacity: .9; }
+  button:disabled{ opacity: .35; cursor: not-allowed; }
+  .spacer{ flex: 1; }
+  select{
+    font-family: var(--mono); font-size: 12.5px; background: var(--panel-2);
+    color: var(--text); border: 1px solid var(--line); border-radius: 7px; padding: 7px 8px;
+  }
+  .step-count{ font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MAX SUM ROW INDEX</h1>
+  <p class="sub">Sum each row left to right, then keep whichever row's total is the biggest so far. Step through it, or hit play.</p>
+
+  <div class="stage">
+    <div class="tracker">
+      <div>current row sum: <b id="curSum">–</b></div>
+      <div>best sum so far: <b id="bestSum">–</b></div>
+      <div>best row index: <b id="bestIdx">–</b></div>
+    </div>
+
+    <div class="rows" id="rows"></div>
+
+    <div class="log" id="log">Press <b>Step</b> or <b>Play</b> to begin.</div>
+
+    <div class="controls">
+      <button id="resetBtn">↺ Reset</button>
+      <button id="stepBtn" class="primary">Step ▸</button>
+      <button id="playBtn">Play ▶</button>
+      <div class="spacer"></div>
+      <span class="step-count" id="stepCount"></span>
+      <select id="presetSel">
+        <option value="0">Preset: last row wins</option>
+        <option value="1">Preset: first row wins</option>
+        <option value="2">Preset: middle row wins</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+const presets = [
+  [[1,2,3],[4,5],[10]],          // last row wins
+  [[9,8],[1],[2,2]],             // first row wins
+  [[1,1],[9,9,9],[2]],           // middle row wins
+];
+
+let matrix = presets[0];
+let steps = [];        // list of {type, row, col, value}
+let stepPtr = -1;
+let playing = false;
+let playTimer = null;
+
+function buildSteps(mat){
+  const s = [];
+  for(let i=0;i<mat.length;i++){
+    s.push({type:'start-row', row:i});
+    for(let j=0;j<mat[i].length;j++){
+      s.push({type:'read-cell', row:i, col:j, value:mat[i][j]});
+    }
+    s.push({type:'end-row', row:i});
+  }
+  s.push({type:'done'});
+  return s;
+}
+
+function renderMatrix(mat){
+  const container = document.getElementById('rows');
+  container.innerHTML = '';
+  mat.forEach((row,i)=>{
+    const rowEl = document.createElement('div');
+    rowEl.className = 'row';
+    rowEl.id = 'row'+i;
+    const label = document.createElement('div');
+    label.className = 'row-label';
+    label.textContent = 'row '+i;
+    const cells = document.createElement('div');
+    cells.className = 'cells';
+    row.forEach((v,j)=>{
+      const c = document.createElement('div');
+      c.className = 'cell';
+      c.id = 'cell-'+i+'-'+j;
+      c.textContent = v;
+      cells.appendChild(c);
+    });
+    const sumBadge = document.createElement('div');
+    sumBadge.className = 'sum-badge';
+    sumBadge.id = 'sum-'+i;
+    sumBadge.innerHTML = 'sum: <b>–</b>';
+    const crown = document.createElement('span');
+    crown.className = 'crown';
+    crown.id = 'crown-'+i;
+    crown.textContent = '👑 current best';
+    rowEl.appendChild(label);
+    rowEl.appendChild(cells);
+    rowEl.appendChild(sumBadge);
+    rowEl.appendChild(crown);
+    container.appendChild(rowEl);
+  });
+}
+
+let runningSum = 0;
+let bestSum = -Infinity;
+let bestIdx = -1;
+
+function resetState(){
+  stepPtr = -1;
+  runningSum = 0;
+  bestSum = -Infinity;
+  bestIdx = -1;
+  playing = false;
+  clearInterval(playTimer);
+  document.getElementById('playBtn').textContent = 'Play ▶';
+  renderMatrix(matrix);
+  steps = buildSteps(matrix);
+  document.getElementById('curSum').textContent = '–';
+  document.getElementById('bestSum').textContent = '–';
+  document.getElementById('bestIdx').textContent = '–';
+  document.getElementById('log').innerHTML = 'Press <b>Step</b> or <b>Play</b> to begin.';
+  document.getElementById('stepCount').textContent = '0 / '+ (steps.length-1);
+  document.querySelectorAll('.row').forEach(r=>{ r.classList.remove('active','winner'); });
+}
+
+function applyStep(step){
+  const log = document.getElementById('log');
+  if(step.type === 'start-row'){
+    document.querySelectorAll('.row').forEach(r=>r.classList.remove('active'));
+    document.getElementById('row'+step.row).classList.add('active');
+    runningSum = 0;
+    document.getElementById('curSum').textContent = '0';
+    log.innerHTML = 'Starting <b>row '+step.row+'</b> — resetting running sum to 0.';
+  }
+  else if(step.type === 'read-cell'){
+    document.querySelectorAll('.cell').forEach(c=>c.classList.remove('reading'));
+    const cellEl = document.getElementById('cell-'+step.row+'-'+step.col);
+    cellEl.classList.add('reading');
+    runningSum += step.value;
+    document.getElementById('curSum').textContent = runningSum;
+    document.getElementById('sum-'+step.row).innerHTML = 'sum: <b>'+runningSum+'</b>';
+    log.innerHTML = 'row '+step.row+', col '+step.col+' = <b>'+step.value+'</b> → running sum = <b>'+runningSum+'</b>';
+  }
+  else if(step.type === 'end-row'){
+    document.querySelectorAll('.cell').forEach(c=>c.classList.remove('reading'));
+    if(runningSum > bestSum){
+      bestSum = runningSum;
+      bestIdx = step.row;
+      document.querySelectorAll('.row').forEach(r=>r.classList.remove('winner'));
+      document.getElementById('row'+step.row).classList.add('winner');
+      log.innerHTML = 'row '+step.row+' sum = <b>'+runningSum+'</b> beats previous best → <b>new best row</b>.';
+    } else {
+      log.innerHTML = 'row '+step.row+' sum = <b>'+runningSum+'</b> does not beat best (<b>'+bestSum+'</b>) → best row unchanged.';
+    }
+    document.getElementById('bestSum').textContent = bestSum;
+    document.getElementById('bestIdx').textContent = bestIdx;
+    document.getElementById('row'+step.row).classList.remove('active');
+  }
+  else if(step.type === 'done'){
+    document.querySelectorAll('.cell').forEach(c=>c.classList.remove('reading'));
+    log.innerHTML = 'Done. Row with the maximum sum is <b>row '+bestIdx+'</b> (sum = '+bestSum+').';
+    stopPlaying();
+  }
+}
+
+function stepForward(){
+  if(stepPtr >= steps.length-1) return;
+  stepPtr++;
+  applyStep(steps[stepPtr]);
+  document.getElementById('stepCount').textContent = (stepPtr+1)+' / '+ (steps.length-1);
+  document.getElementById('stepBtn').disabled = stepPtr >= steps.length-1;
+}
+
+function stopPlaying(){
+  playing = false;
+  clearInterval(playTimer);
+  document.getElementById('playBtn').textContent = 'Play ▶';
+}
+
+document.getElementById('stepBtn').addEventListener('click', stepForward);
+document.getElementById('resetBtn').addEventListener('click', resetState);
+document.getElementById('playBtn').addEventListener('click', ()=>{
+  if(playing){ stopPlaying(); return; }
+  playing = true;
+  document.getElementById('playBtn').textContent = 'Pause ❚❚';
+  playTimer = setInterval(()=>{
+    if(stepPtr >= steps.length-1){ stopPlaying(); return; }
+    stepForward();
+  }, 700);
+});
+document.getElementById('presetSel').addEventListener('change', (e)=>{
+  matrix = presets[parseInt(e.target.value)];
+  resetState();
+});
+
+resetState();
+</script>
+</body>
+</html>
